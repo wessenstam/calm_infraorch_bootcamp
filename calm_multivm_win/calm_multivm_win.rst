@@ -462,7 +462,7 @@ Webserver tier - Define the packages
         
         # Due to limitation/security we need to run the Fiesta App via a scheduled background task 
         # Let's deploy one small update
-        $taskAction = New-ScheduledTaskAction -Execute 'npm' -Argument 'start' -WorkingDirectory 'C:\Program Files\Fiesta'
+        $taskAction = New-ScheduledTaskAction -Execute 'npm.cmd' -Argument 'start' -WorkingDirectory "C:\Program Files\Fiesta\"
         $taskTrigger = New-ScheduledTasktrigger -AtStartup -RandomDelay 00:00:30
         $taskUser = 'Administrator'
         $taskPasswd = 'Nutanix/4u'
@@ -545,13 +545,37 @@ Now that we have the Blueprint ready, it's time to deploy it.
       As the screen shows the steps that will be run, dependencies are also show. They are represented by the organge lines and created by Calm automatically. An example of this is the orange line that flows from **Database_Tier Start** towards **...r - Package Install** of the Webserver_VM. That dependencies is there due to the fact that one of the task has the macro **@@{Database_Tier.address}@@** in it.
       Before Calm can patch that variable, the service needs to be started first so Calm knows the IP address(es) of the service.
 
-#. Follow the deployment till it has the **RUNNING** state. The total deployment takes approx. 10 minutes
+#. Follow the deployment till it has the **RUNNING** state. The total deployment takes approx. 15 minutes
 
    .. note::
       To see the individual steps, click on the step you want to see the details and you can follow the step, including the output.
 
    .. figure:: images/20.png
       :align: center
+
+Checking the deployment
+***********************
+
+#. Click the |applications| icon and click on your Application
+
+#. Click on **Services** and click your **Webserver**
+
+#. On the right hand side you will see the IP address
+
+   .. figure:: images/21.png
+      :align: center
+
+#. Copy the IP address and open a new browser
+
+#. Past the IP address and add port 3000 (*example: http:10.42.77.56:3000*)
+
+#. This is showing the FiestaApp
+
+   .. figure:: images/22.png
+      :align: center
+
+#. Your application is running
+
 
 This concludes the module. In a later module you are going to add some steps to make the application more scalable.
   

@@ -535,6 +535,30 @@ Now that we have the Blueprint ready, it's time to deploy it.
    .. figure:: images/20.png
       :align: center
 
+Checking the deployment
+***********************
+
+#. Click the |applications| icon and click on your Application
+
+#. Click on **Services** and click your **Webserver**
+
+#. On the right hand side you will see the IP address
+
+   .. figure:: images/21.png
+      :align: center
+
+#. Copy the IP address and open a new browser
+
+#. Past the IP address and add port 3000 (*example: http:10.42.77.56:3000*)
+
+#. This is showing the FiestaApp
+
+   .. figure:: images/22.png
+      :align: center
+
+#. Your application is running
+      
+
 This concludes the module. In a later module you are going to add some steps to make the application more scalable.
 
 Take aways
