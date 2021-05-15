@@ -397,7 +397,7 @@ Webserver tier - Define the packages
      .. code-block:: Powershell
         
         Write-host "Downloading the NPM server installation file"
-        wget https://nodejs.org/dist/latest-v10.x/node-v10.24.1-x64.msi -OutFile $env:TEMP\node-v10.24.1-x64.msi
+        wget https://nodejs.org/dist/latest-v16.x/node-v16.1.0-x64.msi -OutFile $env:TEMP\node-v16.1.0-x64.msi
 
 #. Click **+ Task** again for the next task
 
@@ -415,7 +415,7 @@ Webserver tier - Define the packages
         $errorOutputFile = "$env:TEMP\ErrorOutput.txt"
         $standardOutputFile = "$env:TEMP\StandardOutput.txt"
         Write-Host "Installing NPM server" 
-        Start-Process MsiExec.exe "/i $env:TEMP\node-v10.24.1-x64.msi /qn" -Wait -RedirectStandardOutput $standardOutputFile -RedirectStandardError $errorOutputFile
+        Start-Process MsiExec.exe "/i $env:TEMP\node-v16.1.0-x64.msi /qn" -Wait -RedirectStandardOutput $standardOutputFile -RedirectStandardError $errorOutputFile
 
 #. Click **+ Task** again for the next task
 
@@ -447,17 +447,35 @@ Webserver tier - Define the packages
         
         Write-Host "Starting the build process"
         mkdir "c:\program Files\Fiesta"
-        Copy-Item -Path $env:TEMP\Fiesta-master\* -Destination "c:\program Files\Fiesta" -Recurse 
+        Copy-Item -Path $env:TEMP\Fiesta-master\* -Destination "c:\program Files\Fiesta" -Recurse
         cd "c:\program Files\Fiesta"
-        npm install
+        npm install --no-audit
         cd client
-        npm install
+        npm install --no-audit
         npm run build
         npm install nodemon currently
         cd ..
-
+        
         Write-Host "FiestaApp ready to be used" 
-        Start-Process node.exe "index.js" -NoNewWindow
+        
+        Write-Host "Starting FiestaApp (via Task Scheduler)"
+        
+        # Due to limitation/security we need to run the Fiesta App via a scheduled background task 
+        # Let's deploy one small update
+        $taskAction = New-ScheduledTaskAction -Execute 'npm' -Argument 'start' -WorkingDirectory 'C:\Program Files\Fiesta'
+        $taskTrigger = New-ScheduledTasktrigger -AtStartup -RandomDelay 00:00:30
+        $taskUser = 'Administrator'
+        $taskPasswd = 'Nutanix/4u'
+        $taskName = 'Run FiestaApp'
+        $description = 'Run Fiesta App'
+        $taskSettings = New-ScheduledTaskSettingsSet -StartWhenAvailable -RunOnlyIfNetworkAvailable -DontStopOnIdleEnd
+        Register-ScheduledTask -TaskName $taskName -Action $taskAction -Trigger $taskTrigger -Description $description -RunLevel Highest -User $taskUser -Password $taskPasswd -Settings $taskSettings 
+        
+        # Is the task registered?
+        Get-ScheduledTaskInfo -TaskName "Run FiestaApp"
+                
+        # Start the task
+        Start-ScheduledTask -TaskName "Run FiestaApp" -AsJob
         
         exit 0
 
