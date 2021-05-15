@@ -21,19 +21,21 @@ In this lab you will leverage multiple pre-built Calm Blueprints to provision yo
 #. Fill out the following fields:
 
    - **Project Name** - *Initials*\ -Project
-   - Under **Users, Groups, and Roles**, select **+ User**
-      - **Name** - Administrators
-      - **Role** - Project Admin
-      - **Action** - Save
-   - Under **Infrastructure**, select **Select Provider > Nutanix**
-   - Click **Select Clusters & Subnets**
-   - Select *Your Assigned Cluster*
-   - Under **Subnets**, select **Primary**, **Secondary**, and click **Confirm**
+   - Under **Project Admin**, type **Administrators (Group)** and select it from the dropdown box
+   - Leave the **Allow Colaboration** selected and click the **Create** button
+  
+   .. figure:: images/2a.png
+
+   - Click the **Accounts** button to add an environment that will be consumed with your project
+   - Click **Select Account** and select **NTNX_LOCAL_AZ**
+   - Click **Add/edit Clusters and Subnets** to configure the cluster and subnets to be used in the project
+   - In the dropdown box, select your cluster
+   - Under **Subnets**, select **Primary**, **Secondary** (if available), and click **Confirm**
    - Mark **Primary** as the default network by clicking the :fa:`star`
 
-   .. figure:: images/3.png
+   .. figure:: images/3a.png
 
-#. Click **Save & Configure Environment**.
+#. Click **Save** in the top rght corner.
 
 .. note::
 
@@ -70,3 +72,13 @@ In this lab you will leverage multiple pre-built Calm Blueprints to provision yo
   #. Click **Save** to create the VM.
 
   #. Power on your *Initials*\ **-WinToolsVM**.
+
+
+  .. |proj-icon| image:: ../images/projects_icon.png
+  .. |mktmgr-icon| image:: ../images/marketplacemanager_icon.png
+  .. |mkt-icon| image:: ../images/marketplace_icon.png
+  .. |bp-icon| image:: ../images/blueprints_icon.png
+  .. |blueprints| image:: ../images/blueprints.png
+  .. |applications| image:: ../images/blueprints.png
+  .. |projects| image:: ../images/projects.png
+  .. |runbooks| image:: ../images/runbooks.png

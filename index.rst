@@ -1,4 +1,4 @@
-.. title:: Nutanix Calm IaaS Bootcamp
+.. title:: Nutanix Calm Advanced Bootcamp
 
 .. toctree::
   :maxdepth: 2
@@ -11,19 +11,20 @@
 
 .. toctree::
   :maxdepth: 2
-  :caption: Calm with Linux Track
-  :name: _calm_linux_track
+  :caption: Calm: Multiple VM Blueprint Linux
+  :name: _calm_linux_multivm
   :hidden:
 
-  calm_iaas_linux/calm_iaas_linux
+  calm_multivm_linux/calm_multivm_linux
 
 .. toctree::
   :maxdepth: 2
-  :caption: Calm DSL
-  :name: _calm_windows_track
+  :caption: Calm: Multiple VM Blueprint Windows
+  :name: _calm_win_multivm
   :hidden:
 
-  calm_dsl/calm_dsl
+  calm_multivm_win/calm_multivm_win
+
 
 .. toctree::
   :maxdepth: 2
@@ -50,9 +51,11 @@
 Getting Started
 ---------------
 
-Welcome to the Nutanix Calm IaaS Bootcamp!
+Welcome to the Nutanix Calm Advanced Bootcamp!
 
 This workbook accompanies an instructor-led session that introduces Nutanix Calm and many common management tasks. Each section has a lesson and an exercise to give you hands-on practice. The instructor explains the exercises and answers any additional questions that you may have.
+Organisations will have applications that they want to deploy in a standard and consistent way. These applications are often build out of multiple VMs working together to deliver the service the organisations needs.
+This workshop is intented to deliver just just. How can Calm help in delivering an application that consists out of multiple VMs and how can these deployed application be managed using Calm Runbooks.
 
 What's New
 ++++++++++
@@ -69,9 +72,9 @@ Agenda
 ++++++
 
 - Nutanix Calm Labs
-    - Calm: Lab Setup
-    - Calm: Deploy Linux Blueprint and use with the Marketplace
-    - Calm: Deploy Windows Blueprint and use with the Marketplace
+    - Calm: Create a MultiVM Blueprint for Linux and Windows
+    - Calm: Use Runbooks for Linux and Windows to manipulate an existing Calm deployed application
+    - Calm: How can DSL be helpfull in managing Calm deployed applications for Linux and Windows
 
 
 - Optional Labs
