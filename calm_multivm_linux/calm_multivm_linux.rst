@@ -8,7 +8,7 @@ Calm: Linux Multi VM Blueprint
 
 Overview
 ++++++++
-In this lab you will be creating a Linux MultiVM Blueprint and deploy it as an application. The application you are going to define is the FiestaApp. This simple application consists out of a Webserver and a mariaDB Database server.
+In this lab you will be creating a Linux MultiVM Blueprint and deploy it as an application. The application you are going to define is the FiestaApp. This simple application consists out of a Webserver and a MariaDB Database server. You also are going to add some actions for Scale-Out and Scale-In, we are going to use HAproxy as a Loadbalancer based on CentOS.
 
 Build the Linux MultiVM Blueprint
 +++++++++++++++++++++++++++++++++
@@ -285,7 +285,7 @@ Webserver tier - Define the VM
    - **Operating System** - Linux
    - **Under VM Configuration**
 
-     - **VM Name** - @@{initials}@@-webserver-vm
+     - **VM Name** - @@{initials}@@-webserver@@{calm_array_index}@@-vm
      - **vCPUs** - 1
      - **Cores per vCPU** - 1
      - **Memory (GB)** - 2
@@ -295,7 +295,7 @@ Webserver tier - Define the VM
 
             #cloud-config
             preserve_hostname: false
-            hostname: @@{initials}@@-webserver-vm
+            hostname: @@{initials}@@-webserver@@{calm_array_index}@@-vm
             ssh_pwauth: true
             users:
                 - name: centos
@@ -472,6 +472,183 @@ Webserver tier - Define the packages
    .. figure:: images/16.png
       :align: center 
 
+
+Loadbalancer tier - Define the VM
+*********************************
+
+#. In the left hand side bottom corner click on the :fa:`plus` icon, right to the **Services** text.
+
+   .. figure:: images/4.png
+      :align: center
+
+#. In the right hand side navigator, Set the Service name to **Loadbalancer_Tier**
+
+#. Click, in the right hand side navigator, on **VM**
+
+#. Provide the following in the fields that are shown:
+
+   - **Name** - HAProxy_VM
+   - **Account** - NTNX_LOCAL_AZ
+   - **Operating System** - Linux
+   - **Under VM Configuration**
+
+     - **VM Name** - @@{initials}@@-haproxy-vm
+     - **vCPUs** - 1
+     - **Cores per vCPU** - 1
+     - **Memory (GB)** - 2
+     - **Guest Customization** - enabled and pasted the below code
+      
+     .. code-block:: bash   
+           #cloud-config
+           preserve_hostname: false
+           hostname: @@{initials}@@-haproxy-vm
+           ssh_pwauth: true
+           users:
+              - name: centos
+                 chpasswd: { expire: False }
+                 lock-passwd: false
+                 plain_text_passwd: 'nutanix/4u'
+                 sudo: ['ALL=(ALL) NOPASSWD:ALL']
+           runcmd:
+              - setenforce 0
+              - sed -i s/^SELINUX=.*$/SELINUX=disabled/ /etc/selinux/config
+              - systemctl disable firewalld
+              - systemctl stop firewalld
+   
+     - **Disk** - Click the :fa:`plus` icon   
+     - **Device Type** - Disk
+     - **Device Bus** - SCSI
+     - **Operation** - Clone from Image Service
+     - **Image** - CentOS7.qcow2
+      
+     - **NETWORK ADAPTERS (NICS)** - Click the :fa:`plus` icon   
+     - **NIC 1** - Primary
+     - **Provate IP** - Dynamic   
+     - **CONNECTION**   
+     - **Check log-in upon create** - enabled
+     - **Credential** - Select your earlier created **root** credentials
+     - **Address** - NIC 1
+     - **Connection Type** - ssh
+     - Leave the rest default   
+  
+Loadbalancer tier - Define the Packages
+***************************************
+
+#. On the top of the right hand side navigation, click **Package**
+
+#. Change **Package Name** to **Install HAproxy**
+
+#. Click **Configure install**
+
+#. On the Canvas where you have your services, click the **+ Task** button to create a new Task
+
+#. Provide the following for the task
+
+   - **Task Name** - Update CentOS
+   - **Type** - Execute
+   - Click the **Browse Library** button
+
+     - Select the **Update CentOS** package
+     - Click **Select**
+
+     .. figure:: images/13.png
+        :align: center
+      
+     - Click **Copy** to have all information copied to your task
+      
+     .. figure:: images/14.png
+        :align: center
+
+     .. note::
+        The Library can be used for the packages that are being used often in packages and saves a lot of typing.
+
+#. Click **+ Task** again for the next task
+
+#. Provide the following for the task
+
+   - **Task Name** - Install HAProxy
+   - **Type** - Execute
+   - **Script Type** - Shell
+   - **Endpoint** - leave blank
+   - **Credential** - Select your created root credential
+   - **Script** - Copy the below lines into the text area
+
+     .. code-block:: bash
+         
+        #!/bin/bash
+
+        sudo yum install -y haproxy
+
+#. Click **+ Task** again for the next task
+
+#. Provide the following for the task
+
+   - **Task Name** - Configure HAProxy
+   - **Type** - Execute
+   - **Script Type** - Shell
+   - **Endpoint** - leave blank
+   - **Credential** - Select your created root credential
+   - **Script** - Copy the below lines into the text area
+
+     .. code-block:: bash
+         
+         #!/bin/bash
+         port=5001
+         
+         echo "global
+         log 127.0.0.1 local0
+         log 127.0.0.1 local1 notice
+         maxconn 4096
+         quiet
+         user haproxy
+         group haproxy
+         defaults
+         log     global
+         mode    http
+         retries 3
+         timeout client 50s
+         timeout connect 5s
+         timeout server 50s
+         option dontlognull
+         option httplog
+         option redispatch
+         balance  roundrobin
+         # Set up application listeners here.
+         listen stats 0.0.0.0:8080
+         mode http
+         log global
+         stats enable
+         stats hide-version
+         stats refresh 30s
+         stats show-node
+         stats uri /stats
+         listen admin
+         bind 127.0.0.1:22002
+         mode http
+         stats uri /
+         frontend http
+         maxconn 2000
+         bind 0.0.0.0:80
+         default_backend servers-http
+         backend servers-http" | sudo tee /etc/haproxy/haproxy.cfg
+         
+         sudo sed -i 's/server host-/#server host-/g' /etc/haproxy/haproxy.cfg
+         
+         hosts=$(echo "@@{Webserver_Tier.address}@@" | sed 's/^,//' | sed 's/,$//' | tr "," "\n")
+         
+         for host in $hosts
+         do
+            echo "  server host-${host} ${host}:${port} weight 1 maxconn 100 check" | sudo tee -a /etc/haproxy/haproxy.cfg
+         done
+         
+         sudo systemctl daemon-reload
+         sudo systemctl enable haproxy
+         sudo systemctl restart haproxy
+
+     .. note::
+         The macro **@@{Webserver_Tier.address}@@** is telling Calm which IP addresses it needs to use for the webservers
+
+
 Using variables in Blueprints
 *****************************
 
@@ -496,10 +673,152 @@ To solve the errors that are being shown, variables need to be defined.
 
 #. There should not be any errors now and the blueprint has been saved
 
+
+Adding Actions
+**************
+
+To be able to scale the Webserver Tier, changes needs to be made to the Service.
+
+#. Click on **Application Profile -> Default -> Actions** :fa:`plus`, in the left hand side to the bottom of your screen.
+
+   .. figure:: images/23.png
+      :align: center
+
+   .. note::
+      If you don't see it, scroll a bit down in the window, or expand by clicking in the down arrow
+
+#. On the right hand side navigator, provide in the **Action Name** field **Scale Out**
+#. In **Variables** click the :fa:`plus` icon
+#. Provide the following
+
+   - **Name** - scale_factor
+   - **Data Type** - Integer
+   - **Value** - 1
+   - Click the |runningman|
+
+   .. figure:: images/24.png
+      :align: center
+
+#. Click on the Canvas in the middle of your screen, the Webserver_Tier
+
+   .. figure:: images/25.png
+      :align: center
+
+#. Under the Webserver_Tier, click the lower box **+ Task** and provide the following
+
+   - **Task Name** - Scale Out
+   - **Scaling Type** - Scale Out
+   - **Scaling Count** - @@{scale_factor}@@
+
+#. Click the HAProxy_Tier on the Canvas
+
+#. Click in the **+ Task** in the top box
+
+#. Provide the following
+
+   - **Task Name** - Configure HAProxy
+   - **Type** - Execute
+   - **Script Type** - Shell
+   - **Endpoint** - leave blank
+   - **Credential** - Select your created root credential
+   - **Script** - Copy the below lines into the text area
+
+     .. code-block:: bash
+         
+         #!/bin/bash
+         port=5001
+         
+         echo "global
+         log 127.0.0.1 local0
+         log 127.0.0.1 local1 notice
+         maxconn 4096
+         quiet
+         user haproxy
+         group haproxy
+         defaults
+         log     global
+         mode    http
+         retries 3
+         timeout client 50s
+         timeout connect 5s
+         timeout server 50s
+         option dontlognull
+         option httplog
+         option redispatch
+         balance  roundrobin
+         # Set up application listeners here.
+         listen stats 0.0.0.0:8080
+         mode http
+         log global
+         stats enable
+         stats hide-version
+         stats refresh 30s
+         stats show-node
+         stats uri /stats
+         listen admin
+         bind 127.0.0.1:22002
+         mode http
+         stats uri /
+         frontend http
+         maxconn 2000
+         bind 0.0.0.0:80
+         default_backend servers-http
+         backend servers-http" | sudo tee /etc/haproxy/haproxy.cfg
+         
+         sudo sed -i 's/server host-/#server host-/g' /etc/haproxy/haproxy.cfg
+         
+         hosts=$(echo "@@{Webserver_Tier.address}@@" | sed 's/^,//' | sed 's/,$//' | tr "," "\n")
+         
+         for host in $hosts
+         do
+            echo "  server host-${host} ${host}:${port} weight 1 maxconn 100 check" | sudo tee -a /etc/haproxy/haproxy.cfg
+         done
+         
+         sudo systemctl daemon-reload
+         sudo systemctl enable haproxy
+         sudo systemctl restart haproxy
+
+#. In the Webserver_Tier, click the just created task **Scale Out**
+
+#. Click the Arrow icon that is shown, besides the Bin icon
+
+#. Drag the arrow to the just created Task in the HAProxy_Tier
+
+   .. note::
+      By dragging the arrow from the Webserver_Tier to the HAProxy_Tier a dependency is being created. The task **Configure HAProxy** will only be run AFTER the Scale Out action has happened. Not independently from the deployment of a new webserver
+
+#. Your screen should roughly look like the below screenshot
+
+   .. figure:: images/26.png
+      :align: center
+
+#. Repeat the same steps from the **Scale Out** for the **Scale In** Action, but make the following changes
+
+   - **Task Name** - Scale In
+   - **Scaling Type** - Scale In
+   - **Scaling Count** - @@{scale_factor}@@
+
+#. All other steps are excatly the same.
+
+#. Save the blueprint by clicking the **Save** button. Any errors that are shown you have to solve first.
+
+Changing the amount of Webservers to deploy
+*******************************************
+
+To be able to deploy multiple Webserver VM, Scale-Out and Scale-In Actions, a small change need to be made in the configuration of the **Webserver_Tier**.
+
+#. Click the **Webserver_Tier** and in the right hand side navigation pane, click **Service**
+
+#. Under the header **Number of Replicas** change the *Max* value to 5
+
+   .. figure:: images/27.png
+      :align: center
+
+
 Deploy the blueprint
 ********************
 
-Now that we have the Blueprint ready, it's time to deploy it.
+Now that you have the Blueprint ready, it's time to deploy it.
 
 #. Click the **Launch** button
 
@@ -524,7 +843,7 @@ Now that we have the Blueprint ready, it's time to deploy it.
       :align: center
 
    .. note::
-      As the screen shows the steps that will be run, dependencies are also show. They are represented by the organge lines and created by Calm automatically. An example of this is the orange line that flows from **Database_Tier Start** towards **...r - Package Install** of the Webserver_VM. That dependencies is there due to the fact that one of the task has the macro **@@{Database_Tier.address}@@** in it.
+      As the screen shows the steps that will be run, dependencies are also shown (organge lines). They are represented by the organge lines and created by Calm automatically. An example of this is the orange line that flows from **Database_Tier Start** towards **...r - Package Install** of the Webserver_VM. That dependencies is there due to the fact that one of the task has the macro **@@{Database_Tier.address}@@** in it.
       Before Calm can patch that variable, the service needs to be started first so Calm knows the IP address(es) of the service.
 
 #. Follow the deployment till it has the **RUNNING** state. The total deployment takes approx. 10 minutes
@@ -540,7 +859,7 @@ Checking the deployment
 
 #. Click the |applications| icon and click on your Application
 
-#. Click on **Services** and click your **Webserver**
+#. Click on **Services** and click your **LoadBalancer** service
 
 #. On the right hand side you will see the IP address
 
@@ -549,7 +868,7 @@ Checking the deployment
 
 #. Copy the IP address and open a new browser
 
-#. Past the IP address and add port 3000 (*example: http:10.42.77.56:3000*)
+#. Past the IP address (*example: http:10.42.77.56*)
 
 #. This is showing the FiestaApp
 
@@ -557,7 +876,78 @@ Checking the deployment
       :align: center
 
 #. Your application is running
+
+Use the created Actions
+***********************
+
+This part of the module is to use the created Actions of **Scale Out** and **Scale In**
+
+Scale Out Action
+^^^^^^^^^^^^^^^^
+
+#. Back in your Applications, click the **Manage** tab
+
+#. Click the **Scale Out** Action and the :fa:`play` button
+
+   .. figure:: images/28.png
+      :align: center
+
+#. In the screen that appears, Leave the **scale_factor** default and click the **Run** button
+
+#. This will trigger the deployment of one extra VM in the Webserver_Tier
+
+#. Wait till the **Scale Out** Action has finished before moving forward. You can follow the progress via clicking the :fa:`eye` button. The process takes approx. 10 minutes.
+
+#. After the Action has finished list the VMs by clicking **:fa:`bars` -> Virtual Infrastructure -> VMs** 
+
+#. Two *Initials*-webserverxx-vm should be shown
+
+#. To check that the scale out has worked, ssh into the HAProxy VM using its IP address as root with password **nutanix/4u**
+
+#. Type the following command 
+
+   .. code:: bash
       
+      cat /etc/haproxy/haproxy.cfg
+
+#. At the end of the file you should see two IP adresses mentioned that correspond with the IP addresses of the *Initials*-webserver##-vm VMs.
+
+   .. figure:: images/29.png
+      :align: center
+
+#. If that is the case, your Scale Out action is working.
+
+#. To test the HAProxy config, stop one of the Webservers and refresh your browser a few times.
+
+#. FiestaApp should still be shown, even now one of the VMs is down. The first time HAProxy hits the powered off server it may take a few seconds to display the FiestaApp.
+
+#. Start the powered off VM to get back to a normal situation before moving on to the next part of this module.
+
+
+Scale In Action
+^^^^^^^^^^^^^^^^
+
+#. Back in your Applications, click the **Manage** tab
+
+#. Click the **Scale In** Action and the :fa:`play` button
+
+#. In the screen that appears, Leave the **scale_factor** default and click the **Run** button
+
+#. This will trigger the depletion of one VM in the Webserver_Tier
+
+#. Wait till the **Scale In** Action has finished before moving forward. You can follow the progress via clicking the :fa:`eye` button
+
+#. After the Action has finished list the VMs by clicking **:fa:`bars` -> Virtual Infrastructure -> VMs** 
+
+#. One *Initials*-webserverxx-vm less should be shown
+
+General Remark on Actions
+*************************
+
+If you Scale Out, or Scale In outside of the set values for the Min and Max of the Service, the Action will still start, but will throw an Error stating that Calm can not go outside of the set boundaries.
+
+.. figure:: images/30.png
+   :align: center
 
 This concludes the module. In a later module you are going to add some steps to make the application more scalable.
 
@@ -567,6 +957,7 @@ Take aways
 - Calm is very well suited to deploy applications that are build from multiple VMs in a consistent manner
 - Macros and variables can be used to have dynamical settings during the deployment of the application
 - Possible dependencies will be dynamically detected by Calm and followed in the deployment of the application
+- Actions can be used to run additional tasks for the Application. Scale Out and Scale In being two examples.
 
 .. |proj-icon| image:: ../images/projects_icon.png
 .. |mktmgr-icon| image:: ../images/marketplacemanager_icon.png
