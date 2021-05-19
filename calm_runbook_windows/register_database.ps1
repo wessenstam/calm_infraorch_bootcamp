@@ -79,7 +79,7 @@ $Payload=@"
 },
 {
     "name": "vmIp",
-    "value": "10.38.20.59"
+    "value": "$host_ip"
 },
 {
     "name": "sysadmin_username_win",
@@ -100,7 +100,7 @@ $Payload=@"
 ],
 "nxClusterId": "$cluster_uuid",
 "databaseType": "sqlserver_database",
-"databaseName": "$initials-FiestaDB",
+"databaseName": "$initials-FiestaDB-Win",
 "description": "",
 "clustered": false,
 "forcedInstall": true,
@@ -146,7 +146,7 @@ $Payload=@"
     }
 },
 "tags": [],
-"name": "xyz-FiestaDB_TM"
+"name": "$initials-FiestaDB-Win_TM"
 },
 "tags": []
 }
@@ -181,8 +181,8 @@ try{
     $response=(Invoke-RestMethod @APIParams)
 }
 $counter=0
-while ($reponse.status -as [int] -lt 4){
-    Write-Host "Registration is still in progress.. Sleeping 1 minute before retrying."
+while ($response.status -ne 5 -and $response.status -ne 4){
+    Write-Host "Registration is still in progress.. Sleeping 1 minute before retrying ($counter/15)."
     start-sleep 60
     if ($counter -lt 15){
         $response=(Invoke-RestMethod @APIParams)
@@ -192,7 +192,7 @@ while ($reponse.status -as [int] -lt 4){
     }
     $counter++
 }
-if ($reponse.status -as [int] -eq 5){
+if ($response.status -eq 5){
     Write-Host "Registration has been successfull."
     exit 0
 }else{

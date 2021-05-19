@@ -38,7 +38,7 @@ try{
     $response=(Invoke-RestMethod @APIParams)
 }
 
-if ($response.name -NotMatch "$initials-FiestaDB"){
+if ($response.name -NotMatch "$initials-FiestaDB-Win"){
     exit 1
 }else{
     exit 0

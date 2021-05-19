@@ -11,28 +11,20 @@
 
 .. toctree::
   :maxdepth: 2
-  :caption: Calm: Multiple VM Blueprint Linux
+  :caption: Calm Advanced: Linux
   :name: _calm_linux_multivm
   :hidden:
 
   calm_multivm_linux/calm_multivm_linux
+  calm_runbook_linux/calm_runbook_linux
 
 .. toctree::
   :maxdepth: 2
-  :caption: Calm: Multiple VM Blueprint Windows
+  :caption: Calm Advanced: Windows
   :name: _calm_win_multivm
   :hidden:
 
   calm_multivm_win/calm_multivm_win
-
-
-.. toctree::
-  :maxdepth: 2
-  :caption: Run Books
-  :name: _optional_labs
-  :hidden:
-
-  calm_runbook_linux/calm_runbook_linux
   calm_runbook_windows/calm_runbook_windows
 
 .. toctree::

@@ -824,7 +824,7 @@ Now that you have the Blueprint ready, it's time to deploy it.
 
 #. Provide the following:
 
-   - **Application Name** - xyz-FiestaApp
+   - **Application Name** - xyz-FiestaApp-Linux
    - Leave the rest default, except the **initials** field
    - **initials** - Your initials, or username
 

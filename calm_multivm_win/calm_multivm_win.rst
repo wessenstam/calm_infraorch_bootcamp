@@ -86,6 +86,7 @@ Database tier - Define the VM
 
        .. figure:: images/6.png
           :align: center
+          
      - **Disk** - Click the :fa:`plus` icon
 
        - **Device Type** - Disk
